@@ -1,0 +1,291 @@
+---
+title: "Multiple linear Regression with Regression Diagnostics in R"
+author: "Mohammad Abdul Wahed"
+date: "2023-03-03"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+We’ll use the marketing data set [datarium package], which contains the impact of the amount of money spent(in dollars) on three advertising medias (youtube, facebook and newspaper) on sales(units).
+
+
+
+
+```{r}
+install.packages('datarium', repos = "http://cran.us.r-project.org")
+```
+
+
+
+```{r}
+require(datarium)
+```
+
+Let's load the marketing dataset
+```{r}
+d=marketing
+d
+```
+
+```{r}
+attach(d)
+```
+
+EXPLORATORY DATA ANALYSIS                                                                         
+Let's perform EDA before we start to model
+
+Let's see how sales varies across amount of money spent on three advertising medias(youtube, facebook and newspaper)
+
+For that we'll use a scatterplot (sales vs money spent on different advertising medias)
+
+```{r}
+plot(sales~youtube)
+```
+
+From the plot, we can observe that as the amount of dollars spent on youtube advertising increases the units sold also increases
+
+
+```{r}
+plot(sales~facebook)
+```
+
+From the plot, we can again observe that as the amount of dollars spent on facebook advertising increases the units sold also increases
+
+```{r}
+plot(sales~newspaper)
+```
+
+From the plot, we can observe that as the amount of dollars spent on newspaper advertising has no such relation to units sold
+
+
+BUILDING A MODEL
+
+```{r}
+model=lm(sales~youtube+facebook+newspaper)
+model
+
+```
+
+sales = 3.527 + 0.046 * youtube + 0.188 * facebook - 0.001 * newspaper
+
+```{r}
+summary(model)
+```
+
+Interpretation
+The first step in interpreting the multiple regression analysis is to examine the F-statistic and the associated p-value, at the bottom of model summary.
+In our example, it can be seen that p-value of the F-statistic is < 2.2e-16, which is highly significant. This means that, at least, one of the predictor variables is significantly related to the outcome variable.
+To see which predictor variables are significant, you can examine the coefficients table, which shows the estimate of regression beta coefficients and the associated t-statistic p-values:
+
+```{r}
+summary(model)$coefficient
+```
+
+For a given the predictor, the t-statistic evaluates whether or not there is significant association between the predictor and the outcome variable, that is whether the beta coefficient of the predictor is significantly different from zero.
+
+It can be seen that, changing in youtube and facebook advertising budget are significantly associated to changes in sales while changes in newspaper budget is not significantly associated with sales.
+
+For a given predictor variable, the coefficient (b) can be interpreted as the average effect on y of a one unit increase in predictor, holding all other predictors fixed. 
+
+For example, for a fixed amount of youtube and newspaper advertising budget, spending an additional 1000 dollars on facebook advertising leads to an increase in sales by approximately 0.1885 * 1000 = 189 sale units, on average.
+
+The youtube coefficient suggests that for every 1000 dollars increase in youtube advertising budget, holding all other predictors constant, we can expect an increase of 0.045 * 1000 = 45 sales units, on average.
+
+We found that newspaper is not significant in the multiple regression model. This means that, for a fixed amount of youtube and newspaper advertising budget, changes in the newspaper advertising budget will not significantly affect sales units.
+
+As the newspaper variable is not significant, it is possible to remove it from the model:
+
+```{r}
+model<-lm(sales~youtube+facebook)
+summary(model)
+```
+
+Our model equation can be written as follow:
+
+sales = 3.5 + 0.045 * youtube + 0.187 * facebook
+
+MODEL ACCURACY ASSESSMENT
+
+The overall quality of the model can be assessed by examining the R-squared
+or Adjusted-R-Squared
+
+In multiple linear regression, the R-Squared represents the correlation coefficient between the observed values of the outcome variable (y) and the fitted (i.e., predicted) values of y. For this reason, the value of R will always be positive and will range from zero to one.
+
+R-Squared represents the proportion of variance, in the outcome variable y, that may be predicted by knowing the value of the x variables. An R-Squared value close to 1 indicates that the model explains a large portion of the variance in the outcome variable.
+
+A problem with the R-Squared, is that, it will always increase when more variables are added to the model, even if those variables are only weakly associated with the response (James et al. 2014). A solution is to adjust the R-Squared by taking into account the number of predictor variables.
+The adjustment in the “Adjusted R Square” value in the summary output is a correction for the number of x variables included in the prediction model.
+
+VERIFYING IF ASSUMPTIONS OF ORDINARY LEAST SQUARES REGRESSION ARE MET
+
+The assumptions are:
+
+1.) Linearity: The specified model must represent a linear relationship
+
+2.) Homogeneity of variance(homoscedasticity): The error variance should be constant
+
+3.) No autocorrelation: No identifiable relationship should exist between the values of the error term.
+
+4.) Normality: The errors should be normally distributed. Technically normality is necessary only for hypothesis tests to be valid.
+
+5.) No multicollinearity: No predictor variable should be perfectly (or
+almost perfectly) explained by the other predictors.
+
+6.) No outliers: A single observation that is substantially different from all other observations can make a large difference in the results of your regression analysis.
+
+7.) No endogenity: The independent variables shouldn’t be correlated with the error term.
+
+We verify if the data have met the underlying ordinary least squares regression assumptions
+
+1.) Linearity
+
+Checking Linearity To check linearity residuals should be plotted against the fit as well as other predictors. If any of these plots show systematic shapes, then the linear model is not appropriate and some nonlinear terms may need to be added. In package car, function residualPlots() produces those plots.
+
+Installing package car
+
+```{r}
+install.packages('car', repos = "http://cran.us.r-project.org")
+```
+
+#residual vs. fitted value and all predictors
+
+```{r}
+require(car)
+residualPlots(model)
+```
+
+To find out whether the 1-on-1 relationships are linear, you need to judge whether the data points are more or less on or around a straight line. We observe not much deviation from linearity.
+
+2.) Homoscedasticity
+
+One of the main assumptions for the ordinary least squares regression is the homogeneity of variance of the residuals. If the model is well-fitted, there should be no pattern to the residuals plotted against the fitted values. If the variance of the residuals is non-constant then the residual variance is said to be “heteroscedastic.” There are graphical and non-graphical methods for detecting heteroscedasticity. A commonly used graphical method is to plot the residuals versus fitted (predicted) values
+
+```{r}
+plot(model$resid~model$fitted.values)
+abline(h=0)
+```
+
+Homoscedasticity means a constant error, you are looking for a constant deviation of the points from the zero-line. Except one outlier at the bottom left, the deviation of points from the zero line is constant
+
+3.) No autocorrelation
+
+Observations of the error term are uncorrelated with each other
+
+You can do a visual check by plotting the residuals against the order of the residuals. The following code snippet allow you to do this:
+
+```{r}
+plot(model$residuals, type = 'l')
+```
+
+If a pattern occurs, it is likely that you have a case of a misspecified model.
+
+4.) Normality
+
+Once you obtain the residuals from your model, this is relatively easy to test using either a QQ Plot. Let’s see how to make QQ Plots of the residuals using R 
+
+```{r}
+qqnorm(model$residuals)
+abline(qqline(model$residuals))
+```
+
+What you need to look at in QQ Plots is whether the points are on the straight line going from bottom left to top right. We observe not much deviance from normality
+
+5.) No multicollinearity
+
+Multicollinearity is the phenomenon when a number of the explanatory variables are strongly correlated.
+You can test for multicollinearity problems using the Variance Inflation Factor, or VIF in short. The VIF indicates for an independent variable how much it is correlated to the other independent variables. You can compute VIF in R with the following code.
+
+```{r}
+library(car)
+car::vif(model)
+```
+
+VIF starts from 1 and has no upper limit. A VIF of 1 is the best you can have as this indicates that there is no multicollinearity for this variable. A VIF of higher than 5 or 10 indicates that there is a problem with the independent variables in your model.
+
+In the current model, there seems to be no multicollinearity.
+
+6.) No outliers
+
+Studentized residuals can be used to identify outliers. In R we use rstandard() function to compute Studentized residuals.
+
+```{r}
+res.std <- rstandard(model) #studentized residuals stored in vector res.std 
+#plot Standardized residual in y axis. X axis will be the index or row names
+plot(res.std, ylab="Standardized Residual", ylim=c(-3.5,3.5))
+#add horizontal lines 3 and -3 to identify extreme values
+abline(h =c(-3,0,3), lty = 2)
+```
+
+We should pay attention to studentized residuals that exceed +2 or -2, and get even more concerned about residuals that exceed +2.5 or -2.5 and even yet more concerned about residuals that exceed +3 or -3.
+
+```{r}
+#find out which data point is outside of 3 standard deviation cut-off
+#index is row numbers of those point
+index <- which(res.std > 3 | res.std < -3)
+```
+
+```{r}
+#print row number of values that are out of bounds
+print(index)
+```
+
+Row number 6 and 131 are to be deleted for a more robust model
+
+```{r}
+d = d[-c(6, 131),]
+```
+
+Plotting studentized residuals again
+
+
+
+```{r}
+attach(d)
+```
+
+```{r}
+model=lm(sales~youtube+facebook)
+model
+```
+
+
+```{r}
+res.std <- rstandard(model) #studentized residuals stored in vector res.std 
+#plot Standardized residual in y axis. X axis will be the index or row names
+plot(res.std, ylab="Standardized Residual", ylim=c(-3.5,3.5))
+#add horizontal lines 3 and -3 to identify extreme values
+abline(h =c(-3,0,3), lty = 2)
+```
+
+As we see no residuals are exceeding +3 or -3 in the studentized residuals plot
+We have successfully removed outliers from our data
+
+
+7.) No endogenity
+
+All independent variables are uncorrelated with the error term
+The seventh diagnostical check of our linear regression model serves to check whether there is correlation between any of the independent variables and the error term. If this happens, it is likely that you have a case of a misspecified model. You may have forgotten an important explanatory variable.
+
+You can obtain the scatter plots using the following R code:
+
+```{r}
+plot(youtube, model$residuals)
+```
+
+```{r}
+plot(facebook, model$residuals)
+```
+
+In these scatter plots, we do not see any clear correlation.
+
+CONCLUSIONS
+
+Finally, our model equation can be written as follows:
+
+sales = 3.66 + 0.044 * youtube + 0.195 * facebook
